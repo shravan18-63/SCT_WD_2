@@ -40,5 +40,5 @@ It’s more than just a calculator — it’s a hands-on exercise to strengthen 
 
 ---
 This is the Internship Task 2 assigned by SkillCraft Technology
-## 📁 Project Structure
+
 
