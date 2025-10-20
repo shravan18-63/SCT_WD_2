@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117;
+        }
+        #display {
+            font-size: 2.5rem;
+            min-height: 5rem;
+            word-wrap: break-word;
+            word-break: break-all;
+            line-height: 1.2;
+            user-select: none;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        #calculator-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+        .calc-btn {
+            padding: 1rem 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 500;
+            border: none;
+            transition: all 0.1s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+            border-radius: 1.5rem;
+            cursor: pointer;
+            will-change: transform;
+        }
+        .calc-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.6), 0 1px 2px -1px rgba(0, 0, 0, 0.5);
+        }
+        .operator {
+            background-color: #ff9500;
+            color: #ffffff;
+        }
+        .operator:hover {
+            background-color: #e58b00;
+        }
+        .special {
+            background-color: #505050;
+            color: #ffffff;
+        }
+        .special:hover {
+            background-color: #404040;
+        }
+        .number, .decimal {
+            background-color: #333333;
+            color: #ffffff;
+        }
+        .number:hover, .decimal:hover {
+            background-color: #282828;
+        }
+        .equal {
+            grid-column: span 2;
+            background-color: #007bff;
+            color: #ffffff;
+        }
+        .equal:hover {
+            background-color: #0069d9;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div id="calculator" class="w-full max-w-sm bg-gray-900 rounded-3xl p-6 shadow-2xl transition-all duration-300">
+        <div class="mb-6">
+            <div id="expression" class="text-right text-gray-400 text-lg h-6 overflow-hidden whitespace-nowrap"></div>
+            <div id="display" class="text-right text-white font-bold tracking-tight overflow-x-auto">0</div>
+        </div>
+        <div id="calculator-grid">
+            <button class="calc-btn special" data-value="AC">AC</button>
+            <button class="calc-btn special" data-value="DEL">DEL</button>
+            <button class="calc-btn special" data-value="%">%</button>
+            <button class="calc-btn operator" data-value="/">/</button>
+            <button class="calc-btn number" data-value="7">7</button>
+            <button class="calc-btn number" data-value="8">8</button>
+            <button class="calc-btn number" data-value="9">9</button>
+            <button class="calc-btn operator" data-value="*">*</button>
+            <button class="calc-btn number" data-value="4">4</button>
+            <button class="calc-btn number" data-value="5">5</button>
+            <button class="calc-btn number" data-value="6">6</button>
+            <button class="calc-btn operator" data-value="-">-</button>
+            <button class="calc-btn number" data-value="1">1</button>
+            <button class="calc-btn number" data-value="2">2</button>
+            <button class="calc-btn number" data-value="3">3</button>
+            <button class="calc-btn operator" data-value="+">+</button>
+            <button class="calc-btn number" data-value="0">0</button>
+            <button class="calc-btn decimal" data-value=".">.</button>
+            <button class="calc-btn equal" data-value="=">=</button>
+        </div>
+    </div>
+    <script>
+        let currentExpression = '';
+        let resultDisplayed = false;
+        const display = document.getElementById('display');
+        const expressionEl = document.getElementById('expression');
+        const buttons = document.querySelectorAll('.calc-btn');
+        const MAX_DIGITS = 12;
+
+        function formatResult(value) {
+            let s = String(value);
+            if (s.length > MAX_DIGITS + 3 && (s.includes('e') || s.includes('E'))) {
+                return parseFloat(s).toExponential(MAX_DIGITS - 6);
+            }
+            if (s.length > MAX_DIGITS && s.includes('.')) {
+                const decimalIndex = s.indexOf('.');
+                if (decimalIndex > MAX_DIGITS) {
+                    return parseFloat(s).toPrecision(MAX_DIGITS);
+                }
+                const fixedLength = MAX_DIGITS - decimalIndex - 1;
+                return parseFloat(s).toFixed(Math.max(0, fixedLength));
+            } else if (s.length > MAX_DIGITS) {
+                return parseFloat(s).toExponential(MAX_DIGITS - 6);
+            }
+            return s;
+        }
+
+        function updateDisplay() {
+            expressionEl.textContent = currentExpression.replace(/\*/g, '×').replace(/\//g, '÷');
+            if (currentExpression === '') {
+                display.textContent = '0';
+            } else {
+                const parts = currentExpression.split(/[\+\-\*\/%]/).filter(p => p !== '');
+                const lastPart = parts.pop() || '';
+                if (lastPart !== '') {
+                    let formatted = lastPart;
+                    if (!isNaN(parseFloat(lastPart))) {
+                        if (lastPart.length > MAX_DIGITS) {
+                            formatted = parseFloat(lastPart).toPrecision(MAX_DIGITS - 2);
+                        }
+                    }
+                    display.textContent = formatted.replace(/\*/g, '×').replace(/\//g, '÷');
+                } else {
+                    const lastChar = currentExpression.slice(-1);
+                    if (['+', '-', '*', '/', '%'].includes(lastChar)) {
+                        display.textContent = lastChar.replace(/\*/g, '×').replace(/\//g, '÷');
+                    } else {
+                        display.textContent = '0';
+                    }
+                }
+            }
+        }
+
+        function evaluateExpression() {
+            try {
+                if (currentExpression === '') return;
+                const sanitizedExpression = currentExpression.replace(/[^0-9\+\-\*\/\.%]/g, '');
+                const result = new Function('return ' + sanitizedExpression)();
+                if (isNaN(result) || !isFinite(result)) {
+                    throw new Error("Math Error");
+                }
+                const formattedResult = formatResult(result);
+                expressionEl.textContent = currentExpression.replace(/\*/g, '×').replace(/\//g, '÷') + ' =';
+                currentExpression = String(result);
+                display.textContent = formattedResult;
+                resultDisplayed = true;
+            } catch (error) {
+                display.textContent = 'Error';
+                currentExpression = '';
+                resultDisplayed = false;
+            }
+        }
+
+        function handleInput(value) {
+            const lastChar = currentExpression.slice(-1);
+            const isOperator = ['+', '-', '*', '/', '%'].includes(value);
+            const isLastCharOperator = ['+', '-', '*', '/', '%'].includes(lastChar);
+            const isNumber = /^\d$/.test(value);
+            if (value === 'AC') {
+                currentExpression = '';
+                resultDisplayed = false;
+            } else if (value === 'DEL') {
+                currentExpression = currentExpression.slice(0, -1);
+                resultDisplayed = false;
+            } else if (value === '=') {
+                evaluateExpression();
+                return;
+            } else if (isNumber) {
+                if (resultDisplayed) {
+                    currentExpression = value;
+                } else {
+                    currentExpression += value;
+                }
+                resultDisplayed = false;
+            } else if (value === '.') {
+                if (resultDisplayed) {
+                    currentExpression = '0.';
+                    resultDisplayed = false;
+                } else {
+                    const parts = currentExpression.split(/[\+\-\*\/%]/).filter(p => p !== '');
+                    const currentNumber = parts.pop() || '';
+                    if (!currentNumber.includes('.')) {
+                        if (isLastCharOperator || currentExpression === '') {
+                            currentExpression += '0';
+                        }
+                        currentExpression += value;
+                    }
+                }
+            } else if (isOperator) {
+                if (currentExpression === '' && value !== '-') {
+                    return;
+                } else if (isLastCharOperator) {
+                    currentExpression = currentExpression.slice(0, -1) + value;
+                } else {
+                    currentExpression += value;
+                    resultDisplayed = false;
+                }
+            }
+            updateDisplay();
+        }
+
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                const value = button.getAttribute('data-value');
+                handleInput(value);
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            const key = event.key;
+            let mappedValue = '';
+            if (/[0-9]|\./.test(key)) {
+                mappedValue = key;
+            } else if (key === '+' || key === '-' || key === '*' || key === '/') {
+                mappedValue = key;
+            } else if (key === 'Enter' || key === '=') {
+                event.preventDefault();
+                mappedValue = '=';
+            } else if (key === 'Backspace') {
+                mappedValue = 'DEL';
+            } else if (key === 'Delete') {
+                mappedValue = 'AC';
+            } else if (key === '%') {
+                mappedValue = '%';
+            }
+            if (mappedValue) {
+                const targetButton = document.querySelector(`[data-value="${mappedValue}"]`);
+                if (targetButton) {
+                    const buttonElement = targetButton;
+                    buttonElement.style.transform = 'translateY(2px)';
+                    buttonElement.style.boxShadow = '0 2px 4px -1px rgba(0, 0, 0, 0.6), 0 1px 2px -1px rgba(0, 0, 0, 0.5)';
+                    setTimeout(() => {
+                        buttonElement.style.transform = '';
+                        buttonElement.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4)';
+                    }, 100);
+                }
+                handleInput(mappedValue);
+            }
+        });
+
+        updateDisplay();
+    </script>
+</body>
+</html>
+```
